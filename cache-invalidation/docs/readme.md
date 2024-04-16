@@ -9,3 +9,5 @@ Different strategies can be employed for cache invalidation, depending on the na
 - [Change driven Invalidation](./02-change-driven-invalidation.md)
 
 - [State while Revalidate](./03-state-while-revalidate.md)
+
+- [Mixing strategies](./04-mixing.md)

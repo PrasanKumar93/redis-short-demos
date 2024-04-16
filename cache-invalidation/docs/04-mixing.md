@@ -1,4 +1,4 @@
-# Time-based Expiration + Change-driven Invalidation
+# Mixing : Time-based Expiration + Change-driven Invalidation
 
 Combining Time-based Expiration with Change-driven Invalidation can create a robust caching strategy that leverages the strengths of both approaches. This hybrid strategy ensures data freshness and consistency while also efficiently managing cache space and reducing unnecessary data fetching.
 
