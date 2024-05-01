@@ -2,7 +2,8 @@
   "scripts": {
     "build": "npx tsc",
     "01": "npm run build && node dist/01-get-videos-info.js",
-    "02": "npm run build && node dist/02-get-videos-transcript.js"
+    "02": "npm run build && node dist/02-get-videos-transcript.js",
+    "03": "npm run build && node dist/03-get-transcripts-summary.js"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",
@@ -10,6 +11,7 @@
   },
   "dependencies": {
     "@googleapis/youtube": "^15.0.0",
+    "@langchain/openai": "^0.0.28",
     "dotenv": "^16.4.5",
     "langchain": "^0.1.36",
     "redis": "^4.6.13"

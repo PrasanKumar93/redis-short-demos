@@ -28,15 +28,15 @@ export default {
             ENV.YOUTUBE_VIDEOS ??
             'AJhTduDOVCs,c9Rr--1r6pk,FQzlq91g7mg,I-ohlZXXaxs,KUfufrwpBkM,LaiQFZ5bXaM,SzcpwtLRgyk,Z8qcpXyMAiA'
         ).split(','),
-        TRANSCRIPT_PREFIX: 'transcripts:',
-        VIDEO_INFO_PREFIX: 'yt-videos:',
     },
     redis: {
         REDIS_URL: ENV.REDIS_URL ?? 'redis://localhost:6379',
         VIDEO_INDEX_NAME: 'idx-videos',
         VIDEO_PREFIX: 'video:',
+        VIDEO_INFO_PREFIX: 'video-info:',
+        VIDEO_TRANSCRIPT_PREFIX: 'video-transcript:',
+        VIDEO_SUMMARY_PREFIX: 'video-summary:',
         VECTOR_SET: 'video-vectors',
-        SUMMARY_PREFIX: 'video-summary:',
         ANSWER_INDEX_NAME: 'idx-answers',
         ANSWER_PREFIX: 'video-answer:',
     },
