@@ -55,10 +55,10 @@ const init = async () => {
     await redisUtils.setConnection(config.redis.REDIS_URL);
 
     if (results?.length) {
-        results.map(async (video) => {
-            const key = `${config.redis.VIDEO_PREFIX}${video.id}`;
-            await redisUtils.set(key, JSON.stringify(video));
-        });
+        for (let videoInfo of results) {
+            const key = `${config.redis.VIDEO_INFO_PREFIX}${videoInfo.id}`;
+            await redisUtils.set(key, JSON.stringify(videoInfo));
+        }
     }
 
     await redisUtils.closeConnection();
