@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "build": "npx tsc",
+    "01": "npm run build && node dist/01-get-videos-info.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@googleapis/youtube": "^15.0.0",
+    "dotenv": "^16.4.5",
+    "redis": "^4.6.13"
+  }
+}
