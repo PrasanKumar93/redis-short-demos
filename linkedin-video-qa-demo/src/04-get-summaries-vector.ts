@@ -5,7 +5,7 @@ import { OpenAIEmbeddings } from '@langchain/openai';
 import config from './misc/config';
 import * as redisUtils from './misc/redis-wrapper';
 
-const getRedisVectorStore = (client) => {
+const getSummaryRedisVectorStore = (client) => {
     const embeddings = new OpenAIEmbeddings({
         openAIApiKey: config.openai.API_KEY,
         modelName: config.openai.EMBEDDING_MODEL,
@@ -59,7 +59,7 @@ const init = async () => {
 
     if (summaries?.length && client) {
         //convert summaries to vectors and add to redis
-        const vectorStore = getRedisVectorStore(client);
+        const vectorStore = getSummaryRedisVectorStore(client);
         //@ts-ignore
         await vectorStore.addDocuments(summaries);
         console.log('Summary vectors added to redis');
