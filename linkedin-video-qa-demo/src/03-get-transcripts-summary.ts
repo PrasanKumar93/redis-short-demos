@@ -60,10 +60,9 @@ async function getTranscriptsSummary(videoIds: string[]) {
 }
 
 const init = async () => {
-
-    const videoIds = config.youtube.VIDEOS;
     await redisUtils.setConnection(config.redis.REDIS_URL);
 
+    const videoIds = config.youtube.VIDEOS;
     const results: Document[] = await getTranscriptsSummary(videoIds);
 
     //add results to redis

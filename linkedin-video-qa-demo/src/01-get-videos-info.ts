@@ -46,14 +46,12 @@ const getVideosInfo = async (videoIds: string[]) => {
 }
 
 const init = async () => {
+    await redisUtils.setConnection(config.redis.REDIS_URL);
 
     const videoIds = config.youtube.VIDEOS;
-
     const results = await getVideosInfo(videoIds);
 
     //add results to redis
-    await redisUtils.setConnection(config.redis.REDIS_URL);
-
     if (results?.length) {
         for (let videoInfo of results) {
             const key = `${config.redis.VIDEO_INFO_PREFIX}${videoInfo.id}`;

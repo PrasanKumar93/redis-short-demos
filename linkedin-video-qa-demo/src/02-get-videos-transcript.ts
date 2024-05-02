@@ -39,14 +39,12 @@ async function getVideosTranscript(videoIds: string[]) {
 
 
 const init = async () => {
+    await redisUtils.setConnection(config.redis.REDIS_URL);
 
     const videoIds = config.youtube.VIDEOS;
-
     const results: Document[] = await getVideosTranscript(videoIds);
 
     //add results to redis
-    await redisUtils.setConnection(config.redis.REDIS_URL);
-
     if (results?.length) {
         for (let transcript of results) {
             const key = `${config.redis.VIDEO_TRANSCRIPT_PREFIX}${transcript.metadata.id}`;

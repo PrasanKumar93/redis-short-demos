@@ -18,7 +18,7 @@ async function setConnection(_connectionURL: string) {
     return nodeRedisClient;
 }
 
-async function getConnection() {
+function getConnection() {
     return nodeRedisClient;
 }
 
