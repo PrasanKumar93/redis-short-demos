@@ -19,6 +19,11 @@ const llm = new ChatOpenAI({
 });
 
 const getSummaryRedisVectorStore = (client) => {
+    /**
+     * This vector store will match a short question (e.g. "Tell me about streams") with
+     * a bank of longer transcript summaries + questions.
+     */
+
     const embeddings = new OpenAIEmbeddings({
         openAIApiKey: config.openai.API_KEY,
         modelName: config.openai.EMBEDDING_MODEL,
@@ -77,9 +82,11 @@ async function answerQuestion(question: string, videos: Document[]) {
         data: JSON.stringify(videos),
     });
 
+    const videoIds = videos.map((video) => video.metadata.id);
+
     const answerDocument = new Document({
         metadata: {
-            videos,
+            videoIds,
             answer,
         },
         pageContent: question,

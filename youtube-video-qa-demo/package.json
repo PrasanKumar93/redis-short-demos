@@ -5,7 +5,8 @@
     "02": "npm run build && node dist/02-get-videos-transcript.js",
     "03": "npm run build && node dist/03-get-transcripts-summary.js",
     "04": "npm run build && node dist/04-get-summaries-vector.js",
-    "05": "npm run build && node dist/05-search-summary.js"
+    "05": "npm run build && node dist/05-search-summary.js",
+    "06": "npm run build && node dist/06-search-summary-with-semantic-cache.js"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",

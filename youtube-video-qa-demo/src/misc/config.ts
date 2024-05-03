@@ -14,10 +14,10 @@ export default {
         maxSimilarityScore: 0.2,
         answerCache: true,
     },
-    log: {
-        LEVEL: 'info',
-        STREAM: 'LOGS',
-    },
+    // log: {
+    //     LEVEL: 'info',
+    //     STREAM: 'LOGS',
+    // },
     env: {
         DEV: typeof ENV.NODE_ENV === 'string' ? ENV.NODE_ENV === 'development' : true,
         PROD: ENV.NODE_ENV === 'production',
@@ -39,9 +39,8 @@ export default {
         VIDEO_SUMMARY_VECTOR_INDEX_NAME: 'idx-video-summary-vector',
         VIDEO_SUMMARY_VECTOR_PREFIX: 'video-summary-vector:',
 
-        VECTOR_SET: 'video-vectors',
-        ANSWER_INDEX_NAME: 'idx-answers',
-        ANSWER_PREFIX: 'video-answer:',
+        ANSWER_INDEX_NAME: 'idx-llm-answer',
+        ANSWER_PREFIX: 'llm-answer:',
     },
     search: {
         API_KEY: ENV.SEARCHAPI_API_KEY,
@@ -49,9 +48,9 @@ export default {
     google: {
         API_KEY: ENV.GOOGLE_API_KEY,
 
-        PREFIX: 'google',
-        EMBEDDING_MODEL: 'embedding-001',
-        SUMMARY_MODEL: 'gemini-pro',
+        // PREFIX: 'google',
+        // EMBEDDING_MODEL: 'embedding-001',
+        // SUMMARY_MODEL: 'gemini-pro',
     },
     openai: {
         API_KEY: ENV.OPENAI_API_KEY,
