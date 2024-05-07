@@ -17,15 +17,25 @@ const getSummaryRedisVectorStore = (client) => {
 
     const vectorStore = new RedisVectorStore(embeddings, {
         redisClient: client,
+        // Name of the index for storing vectors
         indexName: config.redis.VIDEO_SUMMARY_VECTOR_INDEX_NAME,
+        // Prefix for keys used in Redis
         keyPrefix: config.redis.VIDEO_SUMMARY_VECTOR_PREFIX,
         indexOptions: {
+            // Algorithm for indexing vectors
             ALGORITHM: VectorAlgorithms.HNSW,
+            // Distance metric for comparing vectors
             DISTANCE_METRIC: 'IP',
         },
     });
 
     return vectorStore;
+
+    /*
+      Hierarchical Navigable Small World graphs (HNSW). : Efficient similarity search in high-dimensional spaces
+     Inner Product (IP) :  is a common metric used in vector similarity calculations.
+     https://redis.io/learn/howtos/solutions/vector/getting-started-vector
+    */
 }
 
 async function getSummaries(videoIds: string[]) {
@@ -58,9 +68,10 @@ const init = async () => {
     const summaries = await getSummaries(videoIds);
 
     if (summaries?.length && client) {
-        //convert summaries to vectors and add to redis
+        // Creating a RedisVectorStore instance for summary vectors
         const vectorStore = getSummaryRedisVectorStore(client);
         //@ts-ignore
+        // Adding document vectors to Redis
         await vectorStore.addDocuments(summaries);
         console.log('Summary vectors added to redis');
     }

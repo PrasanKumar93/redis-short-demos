@@ -1,12 +1,11 @@
 import type { Document } from './misc/types';
-
 import { SearchApiLoader } from 'langchain/document_loaders/web/searchapi';
 
 import config from './misc/config';
 import * as redisUtils from './misc/redis-wrapper';
 
 
-async function getVideosTranscript(videoIds: string[]) {
+async function getVideoTranscript(videoIds: string[]) {
     let retDocs: Document[] = [];
 
     if (videoIds?.length) {
@@ -37,20 +36,22 @@ async function getVideosTranscript(videoIds: string[]) {
     return retDocs;
 }
 
-
-const init = async () => {
-    await redisUtils.setConnection(config.redis.REDIS_URL);
-
-    const videoIds = config.youtube.VIDEOS;
-    const results: Document[] = await getVideosTranscript(videoIds);
-
-    //add results to redis
+const addToRedis = async (results: Document[]) => {
     if (results?.length) {
         for (let transcript of results) {
             const key = `${config.redis.VIDEO_TRANSCRIPT_PREFIX}${transcript.metadata.id}`;
             await redisUtils.set(key, JSON.stringify(transcript));
         }
     }
+}
+
+const init = async () => {
+    await redisUtils.setConnection(config.redis.REDIS_URL);
+
+    const videoIds = config.youtube.VIDEOS;
+    const results: Document[] = await getVideoTranscript(videoIds);
+
+    await addToRedis(results);
 
     await redisUtils.closeConnection();
 
