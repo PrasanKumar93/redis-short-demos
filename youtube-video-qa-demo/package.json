@@ -1,12 +1,18 @@
 {
   "scripts": {
     "build": "npx tsc",
-    "01": "npm run build && node dist/01-get-videos-info.js",
-    "02": "npm run build && node dist/02-get-videos-transcript.js",
-    "03": "npm run build && node dist/03-get-transcripts-summary.js",
-    "04": "npm run build && node dist/04-get-summaries-vector.js",
-    "05": "npm run build && node dist/05-search-summary.js",
-    "06": "npm run build && node dist/06-search-summary-with-semantic-cache.js"
+    "get-video-info": "npm run build && node dist/01-get-video-info.js",
+    "get-video-transcript": "npm run build && node dist/02-get-video-transcript.js",
+    "get-transcript-summary": "npm run build && node dist/03-get-transcript-summary.js",
+    "get-summary-vector": "npm run build && node dist/04-get-summary-vector.js",
+    "search-summary": "npm run build && node dist/05-search-summary.js",
+    "search-summary-with-semantic-cache": "npm run build && node dist/06-search-summary-with-semantic-cache.js",
+    "01": "npm run get-video-info",
+    "02": "npm run get-video-transcript",
+    "03": "npm run get-transcript-summary",
+    "04": "npm run get-summary-vector",
+    "05": "npm run search-summary",
+    "06": "npm run search-summary-with-semantic-cache"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",
