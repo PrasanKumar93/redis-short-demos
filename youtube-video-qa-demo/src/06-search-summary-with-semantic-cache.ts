@@ -10,6 +10,7 @@ import * as redisUtils from './misc/redis-wrapper';
 import { SEMANTIC_QUESTION_PROMPT } from './prompt-templates/semantic-question-template'
 import { ANSWER_PROMPT } from './prompt-templates/answer-template';
 
+//#region searchSummary
 const llm = new ChatOpenAI({
     openAIApiKey: config.openai.API_KEY,
     modelName: config.openai.SUMMARY_MODEL,
@@ -42,23 +43,6 @@ const getSummaryRedisVectorStore = (client) => {
         },
     });
 
-    return vectorStore;
-}
-
-const getAnswerRedisVectorStore = (client) => {
-    /**
-        * This vector store will match a short question (e.g. "Tell me about streams") with previously
-        * answered questions (e.g. "What is a stream?")
-        */
-    const vectorStore = new RedisVectorStore(embeddings, {
-        redisClient: client,
-        indexName: config.redis.ANSWER_INDEX_NAME,
-        keyPrefix: config.redis.ANSWER_PREFIX,
-        indexOptions: {
-            ALGORITHM: VectorAlgorithms.FLAT,
-            DISTANCE_METRIC: 'L2',
-        },
-    });
     return vectorStore;
 }
 
@@ -111,6 +95,49 @@ async function answerQuestion(question: string, videos: Document[]) {
     return answerDocument;
 }
 
+async function searchSummary(userQuestion: string) {
+    let answerDocument: Document | null = null;
+
+
+    const semanticQuestion = await getSemanticQuestion(userQuestion);
+
+    let searchResults = await similaritySearchOnRedis(semanticQuestion);
+    if (!searchResults || searchResults.length === 0) {
+        console.log('No videos found for semantic question, trying with original question');
+
+        searchResults = await similaritySearchOnRedis(userQuestion);
+    }
+
+    if (searchResults?.length) {
+        answerDocument = await answerQuestion(userQuestion, searchResults);
+    }
+    else {
+        console.log('No videos found for original question');
+    }
+
+    return answerDocument;
+
+}
+
+//#endregion
+
+const getAnswerRedisVectorStore = (client) => {
+    /**
+        * This vector store will match a short question (e.g. "Tell me about streams") with previously
+        * answered questions (e.g. "What is a stream?")
+        */
+    const vectorStore = new RedisVectorStore(embeddings, {
+        redisClient: client,
+        indexName: config.redis.ANSWER_INDEX_NAME,
+        keyPrefix: config.redis.ANSWER_PREFIX,
+        indexOptions: {
+            ALGORITHM: VectorAlgorithms.FLAT,
+            DISTANCE_METRIC: 'L2',
+        },
+    });
+    return vectorStore;
+}
+
 async function cacheLLMsAnswer(answer: Document) {
     const client = redisUtils.getConnection()
     const vectorStore = getAnswerRedisVectorStore(client);
@@ -152,30 +179,6 @@ async function checkAnswerCache(question: string) {
     }
 
     return retDocs;
-}
-
-async function searchSummary(userQuestion: string) {
-    let answerDocument: Document | null = null;
-
-
-    const semanticQuestion = await getSemanticQuestion(userQuestion);
-
-    let searchResults = await similaritySearchOnRedis(semanticQuestion);
-    if (!searchResults || searchResults.length === 0) {
-        console.log('No videos found for semantic question, trying with original question');
-
-        searchResults = await similaritySearchOnRedis(userQuestion);
-    }
-
-    if (searchResults?.length) {
-        answerDocument = await answerQuestion(userQuestion, searchResults);
-    }
-    else {
-        console.log('No videos found for original question');
-    }
-
-    return answerDocument;
-
 }
 
 const searchSummaryWithSemanticCache = async (userQuestion: string) => {

@@ -35,10 +35,14 @@ const getSummaryRedisVectorStore = (client) => {
 
     const vectorStore = new RedisVectorStore(embeddings, {
         redisClient: client,
+        // Name of the index for storing vectors
         indexName: config.redis.VIDEO_SUMMARY_VECTOR_INDEX_NAME,
+        // Prefix for keys used in Redis
         keyPrefix: config.redis.VIDEO_SUMMARY_VECTOR_PREFIX,
         indexOptions: {
+            // Algorithm for indexing vectors
             ALGORITHM: VectorAlgorithms.HNSW,
+            // Distance metric for comparing vectors
             DISTANCE_METRIC: 'IP',
         },
     });
