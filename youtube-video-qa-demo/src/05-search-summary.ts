@@ -71,7 +71,7 @@ async function similaritySearchOnRedis(question: string) {
     /* Simple standalone search in the vector DB */
     const result = await vectorStore.similaritySearch(question, KNN);
 
-    console.log('similaritySearchOnRedis Result:', result);
+    console.log('similaritySearchOnRedis completed');
     return result;
 }
 
@@ -127,7 +127,7 @@ async function searchSummary(userQuestion: string) {
 const init = async () => {
     await redisUtils.setConnection(config.redis.REDIS_URL);
 
-    const question = 'Tell me about albert einstein quote?';
+    const question = 'How to index and query JSON document in Redis?';
 
     const answerDocument = await searchSummary(question);
     console.log('Answer:', answerDocument?.metadata?.answer);

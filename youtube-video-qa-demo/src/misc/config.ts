@@ -26,7 +26,7 @@ export default {
     youtube: {
         VIDEOS: (
             ENV.YOUTUBE_VIDEOS ??
-            'AJhTduDOVCs,c9Rr--1r6pk,FQzlq91g7mg,I-ohlZXXaxs,KUfufrwpBkM,LaiQFZ5bXaM,SzcpwtLRgyk,Z8qcpXyMAiA'
+            "AJhTduDOVCs,I-ohlZXXaxs,SzcpwtLRgyk,Z8qcpXyMAiA"
         ).split(','),
     },
     redis: {
