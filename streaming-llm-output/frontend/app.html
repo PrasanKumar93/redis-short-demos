@@ -7,25 +7,58 @@
 
       function search() {
         const question = document.getElementById("question").value;
+        const withoutStream = document.getElementById("withoutStream").checked;
+        const outputDiv = document.getElementById("output");
 
-        socket.emit("askQuestion", {
-          questionId: "1",
-          topic: "Redis",
-          topicQuestion: question,
-        });
+        // Clear previous output
+        outputDiv.innerHTML = "";
+
+        if (withoutStream) {
+          // Call the /askQuestionWithoutStream API
+          fetch("http://localhost:3000/askQuestionWithoutStream", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              questionId: "1",
+              topic: "Redis",
+              topicQuestion: question,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              // Append API response to the DOM
+              outputDiv.innerHTML = data.output;
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
+        } else {
+          // Use socket to emit the question
+          socket.emit("askQuestion", {
+            questionId: "1",
+            topic: "Redis",
+            topicQuestion: question,
+          });
+        }
       }
 
       socket.on("chunk", (chunk) => {
+        const outputDiv = document.getElementById("output");
         console.log("Received chunk:", chunk);
         // Append chunk to the DOM
-        const outputDiv = document.getElementById("output");
         outputDiv.innerHTML += chunk; //+ "<br/>";
       });
     </script>
   </head>
   <body>
-    <label for="question">Questions</label><br />
+    <label for="question">Question</label><br />
     <textarea id="question" name="question" rows="4" cols="50"></textarea><br />
+
+    <input type="checkbox" id="withoutStream" name="withoutStream" />
+    <label for="withoutStream">Without Stream</label><br />
+
     <button onclick="search()">Search</button>
     <div id="output"></div>
   </body>

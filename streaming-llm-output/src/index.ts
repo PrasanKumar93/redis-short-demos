@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
 
@@ -27,7 +28,35 @@ const socketServer = new Server(httpServer, {
   },
 });
 
+app.use(cors());
+app.use(express.json());
+
 //------------------
+const getQuestionChain = async function (
+  _model: ChatOpenAI,
+  _questionId: string,
+  _topic: string,
+  _topicQuestion: string
+) {
+  const outputParser = new StringOutputParser();
+
+  // Create a prompt
+  let systemMsg = SystemMessagePromptTemplate.fromTemplate(
+    `You are an expert in answering questions about {topic}.
+       All questions are about particular topic "{topic}". 
+       Make sure your answer is related to {topic}. `
+  );
+  let humanMsg = new HumanMessage(_topicQuestion);
+  const prompt = ChatPromptTemplate.fromMessages([systemMsg, humanMsg]);
+
+  console.log("Prompt: \n", await prompt.format({ topic: _topic }));
+
+  // Create a pipeline chain
+  const chain = prompt.pipe(_model).pipe(outputParser);
+
+  return chain;
+};
+
 const askQuestion = async function (
   _model: ChatOpenAI,
   _questionId: string,
@@ -35,21 +64,12 @@ const askQuestion = async function (
   _topicQuestion: string
 ) {
   if (_model && _topic && _topicQuestion) {
-    const outputParser = new StringOutputParser();
-
-    // Create a prompt
-    let systemMsg = SystemMessagePromptTemplate.fromTemplate(
-      `You are an expert in answering questions about {topic}.
-       All questions are about particular topic "{topic}". 
-       Make sure your answer is related to {topic}. `
+    const chain = await getQuestionChain(
+      _model,
+      _questionId,
+      _topic,
+      _topicQuestion
     );
-    let humanMsg = new HumanMessage(_topicQuestion);
-    const prompt = ChatPromptTemplate.fromMessages([systemMsg, humanMsg]);
-
-    console.log("Prompt: \n", await prompt.format({ topic: _topic }));
-
-    // Create a pipeline chain
-    const chain = prompt.pipe(_model).pipe(outputParser);
 
     // Stream the output
     let streamHandle = await chain.stream({
@@ -60,7 +80,7 @@ const askQuestion = async function (
       questionId: _questionId,
       topic: _topic,
       topicQuestion: _topicQuestion,
-      chunkOutput: "START",
+      chunkOutput: "START\n",
     });
 
     for await (const chunk of streamHandle) {
@@ -77,9 +97,32 @@ const askQuestion = async function (
       questionId: _questionId,
       topic: _topic,
       topicQuestion: _topicQuestion,
-      chunkOutput: "END",
+      chunkOutput: "\nEND",
     });
   }
+};
+
+const askQuestionWithoutStream = async function (
+  _model: ChatOpenAI,
+  _questionId: string,
+  _topic: string,
+  _topicQuestion: string
+) {
+  let output = "";
+  if (_model && _topic && _topicQuestion) {
+    const chain = await getQuestionChain(
+      _model,
+      _questionId,
+      _topic,
+      _topicQuestion
+    );
+
+    output = await chain.invoke({
+      topic: _topic,
+    });
+  }
+
+  return output;
 };
 
 const init = async () => {
@@ -109,6 +152,21 @@ const init = async () => {
     });
   });
 
+  app.post("/askQuestionWithoutStream", async (req, res) => {
+    const { questionId, topic, topicQuestion } = req.body;
+    try {
+      const output = await askQuestionWithoutStream(
+        model,
+        questionId,
+        topic,
+        topicQuestion
+      );
+      res.json({ output });
+    } catch (error) {
+      res.status(500).json({ error: error });
+    }
+  });
+
   httpServer.listen(3000, () => {
     console.log("listening on *:3000");
   });
@@ -119,7 +177,7 @@ init();
 /*
  TODO: 
 
- - Add end mark to the stream data with question id prefix 
  - Send only that question answer to the client that was asked by the client
+ - better to have one stream per question or user ?? , later useful for semantic search ??
  - clear redis stream data after read
 */
