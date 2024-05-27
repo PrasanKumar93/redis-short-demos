@@ -1,17 +1,36 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ask Me About Redis</title>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
 
     <script>
       const socket = io("http://localhost:3000");
 
+      let startTime = null;
       function search() {
         const question = document.getElementById("question").value;
         const withoutStream = document.getElementById("withoutStream").checked;
         const outputDiv = document.getElementById("output");
 
+        startTime = new Date();
+
         // Clear previous output
         outputDiv.innerHTML = "";
+        document.getElementById("duration").innerText = "";
 
         if (withoutStream) {
           // Call the /askQuestionWithoutStream API
@@ -28,8 +47,13 @@
           })
             .then((response) => response.json())
             .then((data) => {
+              const endTime = new Date();
+
               // Append API response to the DOM
               outputDiv.innerHTML = data.output;
+
+              const duration = (endTime - startTime) / 1000;
+              document.getElementById("duration").innerText = duration;
             })
             .catch((error) => {
               console.error("Error:", error);
@@ -49,17 +73,56 @@
         console.log("Received chunk:", chunk);
         // Append chunk to the DOM
         outputDiv.innerHTML += chunk; //+ "<br/>";
+
+        if (chunk.trim() == "START") {
+          const endTime = new Date();
+
+          const duration = (endTime - startTime) / 1000;
+          document.getElementById("duration").innerText = duration;
+        }
       });
     </script>
   </head>
-  <body>
-    <label for="question">Question</label><br />
-    <textarea id="question" name="question" rows="4" cols="50"></textarea><br />
-
-    <input type="checkbox" id="withoutStream" name="withoutStream" />
-    <label for="withoutStream">Without Stream</label><br />
-
-    <button onclick="search()">Search</button>
-    <div id="output"></div>
+  <body class="bg-gray-100 flex justify-center min-h-screen p-4">
+    <div
+      class="flex-grow bg-white p-8 rounded-lg shadow-md max-w-3xl flex flex-col"
+    >
+      <h1 class="text-4xl font-bold text-center mb-8" style="color: #ff4438">
+        Ask Me About Redis
+      </h1>
+      <div class="flex items-center mb-4">
+        <textarea
+          id="question"
+          name="question"
+          rows="1"
+          class="flex-grow p-4 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-red-400"
+          placeholder="Type your question here..."
+        ></textarea>
+        <button
+          onclick="search()"
+          style="background-color: #ff4438; border-color: #ff4438"
+          class="text-white font-bold p-4 rounded-r-lg border"
+        >
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+      <div class="mb-4 flex items-center">
+        <input
+          type="checkbox"
+          id="withoutStream"
+          name="withoutStream"
+          class="mr-2"
+        />
+        <label for="withoutStream" class="text-gray-700">Without Stream</label>
+      </div>
+      <div class="text-gray-600 mb-4">
+        <span>Response received in (seconds) : </span>
+        <span id="duration"></span>
+      </div>
+      <div
+        id="output"
+        class="p-4 bg-gray-100 border border-gray-300 rounded-lg overflow-y-auto h-72"
+      ></div>
+    </div>
   </body>
 </html>
