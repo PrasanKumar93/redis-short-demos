@@ -1,3 +1,7 @@
+import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
+
 import { ChatOpenAI } from "@langchain/openai";
 import {
   ChatPromptTemplate,
@@ -7,11 +11,26 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 
 import { config } from "dotenv";
+import * as redisUtils from "./utils/redis-wrapper.js";
 
+//------------------
 config();
 
+const OPENAI_STREAM = "OPENAI_STREAM";
+
+const app = express();
+const httpServer = createServer(app);
+const socketServer = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+
+//------------------
 const askQuestion = async function (
   _model: ChatOpenAI,
+  _questionId: string,
   _topic: string,
   _topicQuestion: string
 ) {
@@ -37,21 +56,70 @@ const askQuestion = async function (
       topic: _topic,
     });
 
+    await redisUtils.addItemToStream(OPENAI_STREAM, {
+      questionId: _questionId,
+      topic: _topic,
+      topicQuestion: _topicQuestion,
+      chunkOutput: "START",
+    });
+
     for await (const chunk of streamHandle) {
-      console.log(chunk); //TODO: add to stream
+      console.log(chunk);
+
+      await redisUtils.addItemToStream(OPENAI_STREAM, {
+        questionId: _questionId,
+        topic: _topic,
+        topicQuestion: _topicQuestion,
+        chunkOutput: "" + chunk.toString(), //string casting
+      });
     }
+    await redisUtils.addItemToStream(OPENAI_STREAM, {
+      questionId: _questionId,
+      topic: _topic,
+      topicQuestion: _topicQuestion,
+      chunkOutput: "END",
+    });
   }
 };
 
 const init = async () => {
+  const REDIS_URL = process.env.REDIS_URL || "";
+  await redisUtils.setConnection(REDIS_URL);
+
   const model = new ChatOpenAI({
     modelName: "gpt-4",
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const topic = "Redis";
-  const topicQuestion = "What is Streams?";
-  await askQuestion(model, topic, topicQuestion);
+  socketServer.on("connection", (socket) => {
+    console.log("a user connected");
+
+    socket.on("askQuestion", async ({ questionId, topic, topicQuestion }) => {
+      askQuestion(model, questionId, topic, topicQuestion); //async
+
+      // Listen for new messages on the Redis stream
+      let lastId = "0";
+      redisUtils.readStream(OPENAI_STREAM, lastId, (data) => {
+        socket.emit("chunk", data.chunkOutput);
+      });
+    });
+
+    socket.on("disconnect", () => {
+      console.log("user disconnected");
+    });
+  });
+
+  httpServer.listen(3000, () => {
+    console.log("listening on *:3000");
+  });
 };
 
 init();
+
+/*
+ TODO: 
+
+ - Add end mark to the stream data with question id prefix 
+ - Send only that question answer to the client that was asked by the client
+ - clear redis stream data after read
+*/
