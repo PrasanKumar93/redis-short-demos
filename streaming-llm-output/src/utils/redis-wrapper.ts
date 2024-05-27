@@ -67,11 +67,33 @@ async function addItemToStream(streamKey: string, item: any) {
   return insertedId;
 }
 
+async function getLastIdOfStream(streamKey: string) {
+  let lastId = "0-0";
+  try {
+    if (streamKey) {
+      const result = await nodeRedisClient?.xRevRange(streamKey, "+", "-", {
+        COUNT: 1,
+      });
+      if (result && result.length > 0) {
+        lastId = result[0].id;
+      }
+    }
+  } catch (err) {
+    console.log(err);
+  }
+
+  return lastId;
+}
+
 async function readStream(
   stream: string,
   lastId: string,
-  callback: (data: any) => void
+  startChunk: string,
+  endChunk: string,
+  callback: (data: any, id?: string) => void
 ) {
+  let reading = false;
+
   while (true) {
     try {
       const results = await nodeRedisClient?.xRead(
@@ -85,11 +107,17 @@ async function readStream(
       if (results) {
         for (const result of results) {
           for (const item of result.messages) {
-            lastId = item.id;
-            callback(item.message);
+            if (item?.message?.chunkOutput.startsWith(startChunk)) {
+              reading = true;
+            }
 
-            if (item?.message?.chunkOutput === "END") {
-              return;
+            if (reading) {
+              lastId = item.id;
+              callback(item.message, lastId);
+
+              if (item?.message?.chunkOutput.startsWith(endChunk)) {
+                return;
+              }
             }
           }
         }
@@ -109,4 +137,5 @@ export {
   get,
   addItemToStream,
   readStream,
+  getLastIdOfStream,
 };

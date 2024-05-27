@@ -10,6 +10,7 @@ import {
 } from "@langchain/core/prompts";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { StringOutputParser } from "@langchain/core/output_parsers";
+import { v4 as uuidv4 } from "uuid";
 
 import { config } from "dotenv";
 import * as redisUtils from "./utils/redis-wrapper.js";
@@ -80,7 +81,7 @@ const askQuestion = async function (
       questionId: _questionId,
       topic: _topic,
       topicQuestion: _topicQuestion,
-      chunkOutput: "START\n",
+      chunkOutput: `START:${_questionId};`,
     });
 
     for await (const chunk of streamHandle) {
@@ -97,7 +98,7 @@ const askQuestion = async function (
       questionId: _questionId,
       topic: _topic,
       topicQuestion: _topicQuestion,
-      chunkOutput: "\nEND",
+      chunkOutput: `;END:${_questionId}`,
     });
   }
 };
@@ -137,14 +138,25 @@ const init = async () => {
   socketServer.on("connection", (socket) => {
     console.log("a user connected");
 
-    socket.on("askQuestion", async ({ questionId, topic, topicQuestion }) => {
+    socket.on("askQuestion", async ({ topic, topicQuestion }) => {
+      const questionId = uuidv4();
+
+      const lastId = await redisUtils.getLastIdOfStream(OPENAI_STREAM); //to prevent re scan prev question or use consumer groups
+      console.log("lastId", lastId);
       askQuestion(model, questionId, topic, topicQuestion); //async
 
       // Listen for new messages on the Redis stream
-      let lastId = "0";
-      redisUtils.readStream(OPENAI_STREAM, lastId, (data) => {
-        socket.emit("chunk", data.chunkOutput);
-      });
+      const startChunk = `START:${questionId};`;
+      const endChunk = `;END:${questionId}`;
+      redisUtils.readStream(
+        OPENAI_STREAM,
+        lastId,
+        startChunk,
+        endChunk,
+        (data) => {
+          socket.emit("chunk", data.chunkOutput);
+        }
+      );
     });
 
     socket.on("disconnect", () => {
@@ -153,8 +165,9 @@ const init = async () => {
   });
 
   app.post("/askQuestionWithoutStream", async (req, res) => {
-    const { questionId, topic, topicQuestion } = req.body;
+    const { topic, topicQuestion } = req.body;
     try {
+      const questionId = uuidv4();
       const output = await askQuestionWithoutStream(
         model,
         questionId,
@@ -177,7 +190,6 @@ init();
 /*
  TODO: 
 
- - Send only that question answer to the client that was asked by the client
- - better to have one stream per question or user ?? , later useful for semantic search ??
+ - use consumer groups for reading stream for perf issue
  - clear redis stream data after read
 */

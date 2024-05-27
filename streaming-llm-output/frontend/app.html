@@ -40,7 +40,6 @@
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              questionId: "1",
               topic: "Redis",
               topicQuestion: question,
             }),
@@ -61,7 +60,6 @@
         } else {
           // Use socket to emit the question
           socket.emit("askQuestion", {
-            questionId: "1",
             topic: "Redis",
             topicQuestion: question,
           });
