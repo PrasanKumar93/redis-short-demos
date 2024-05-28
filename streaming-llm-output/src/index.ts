@@ -20,6 +20,7 @@ import { LoggerCls } from "./utils/logger.js";
 config();
 
 const OPENAI_STREAM = "OPENAI_STREAM";
+const activeListeners = new Map<string, boolean>();
 
 const app = express();
 const httpServer = createServer(app);
@@ -140,6 +141,10 @@ const init = async () => {
     console.log("a user connected");
 
     socket.on("askQuestion", async ({ topic, topicQuestion }) => {
+      // Set the active listener state for this client
+      const clientId = socket.id;
+      activeListeners.set(clientId, true);
+
       const questionId = uuidv4();
 
       const lastId = await redisUtils.getLastIdOfStream(OPENAI_STREAM); //to prevent re scan prev question or use consumer groups
@@ -154,6 +159,8 @@ const init = async () => {
         lastId,
         startChunk,
         endChunk,
+        clientId,
+        activeListeners,
         (data) => {
           LoggerCls.info(data.chunkOutput);
           socket.emit("chunk", data.chunkOutput);
@@ -163,6 +170,7 @@ const init = async () => {
 
     socket.on("disconnect", () => {
       LoggerCls.info("user disconnected");
+      activeListeners.set(socket.id, false); // Set the listener as inactive on disconnect
     });
   });
 
@@ -192,8 +200,7 @@ init();
 /*
  TODO: 
 
-  - clean up , formatting frontend and back end
- - there is a bug : search same question multiple times (May be socket issue)
+  - clean up , formatting frontend (serve from cli on npm start) and back end
  - use consumer groups for reading stream for perf issue
  - add loader in UI
  

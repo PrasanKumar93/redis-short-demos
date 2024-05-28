@@ -92,11 +92,16 @@ async function readStream(
   lastId: string,
   startChunk: string,
   endChunk: string,
+  clientId: string,
+  activeListeners: Map<string, boolean>,
   callback: (data: any, id?: string) => void
 ) {
   let reading = false;
 
-  while (true) {
+  //safe check for active listener if while loop didn't break for some reason (e.g. chunkOutput.endsWith didn't match endChunk)
+  const isActiveClient = activeListeners.get(clientId);
+  //while(true)
+  while (isActiveClient) {
     try {
       const results = await nodeRedisClient?.xRead(
         commandOptions({
@@ -117,7 +122,8 @@ async function readStream(
               lastId = item.id;
               callback(item.message, lastId);
 
-              if (item?.message?.chunkOutput.startsWith(endChunk)) {
+              if (item?.message?.chunkOutput.endsWith(endChunk)) {
+                console.log("End of chunk found");
                 return;
               }
             }
