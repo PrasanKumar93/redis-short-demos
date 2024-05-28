@@ -1,5 +1,7 @@
 import { commandOptions, createClient } from "redis";
 
+import { LoggerCls } from "./logger.js";
+
 type RedisClientType = ReturnType<typeof createClient>;
 
 let nodeRedisClient: RedisClientType | null = null;
@@ -9,11 +11,11 @@ async function setConnection(_connectionURL: string) {
     nodeRedisClient = createClient({ url: _connectionURL });
 
     nodeRedisClient.on("error", (err) => {
-      console.error("Redis Client Error", err);
+      LoggerCls.error("Redis Client Error", err);
     });
 
     await nodeRedisClient.connect();
-    console.info("redis-wrapper ", "Connected successfully to Redis");
+    LoggerCls.info("redis-wrapper ", "Connected successfully to Redis");
   }
   return nodeRedisClient;
 }
@@ -58,10 +60,10 @@ async function addItemToStream(streamKey: string, item: any) {
           setTimeout(() => reject(new Error("Timeout")), 1000)
         ),
       ]);
-      console.log("insertedId", insertedId);
+      LoggerCls.debug("insertedId", insertedId);
     }
   } catch (err) {
-    console.log(err);
+    LoggerCls.error("addItemToStream", err);
   }
 
   return insertedId;
@@ -123,7 +125,7 @@ async function readStream(
         }
       }
     } catch (err) {
-      console.log(err);
+      LoggerCls.error("readStream", err);
     }
   }
 }

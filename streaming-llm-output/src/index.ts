@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { config } from "dotenv";
 import * as redisUtils from "./utils/redis-wrapper.js";
+import { LoggerCls } from "./utils/logger.js";
 
 //------------------
 config();
@@ -50,7 +51,7 @@ const getQuestionChain = async function (
   let humanMsg = new HumanMessage(_topicQuestion);
   const prompt = ChatPromptTemplate.fromMessages([systemMsg, humanMsg]);
 
-  console.log("Prompt: \n", await prompt.format({ topic: _topic }));
+  LoggerCls.info("Prompt: \n", await prompt.format({ topic: _topic }));
 
   // Create a pipeline chain
   const chain = prompt.pipe(_model).pipe(outputParser);
@@ -81,24 +82,24 @@ const askQuestion = async function (
       questionId: _questionId,
       topic: _topic,
       topicQuestion: _topicQuestion,
-      chunkOutput: `START:${_questionId};`,
+      chunkOutput: `START:${_questionId};<br/>`,
     });
 
     for await (const chunk of streamHandle) {
-      console.log(chunk);
+      LoggerCls.debug(chunk);
 
       await redisUtils.addItemToStream(OPENAI_STREAM, {
         questionId: _questionId,
         topic: _topic,
         topicQuestion: _topicQuestion,
-        chunkOutput: "" + chunk.toString(), //string casting
+        chunkOutput: chunk.toString(), //string casting
       });
     }
     await redisUtils.addItemToStream(OPENAI_STREAM, {
       questionId: _questionId,
       topic: _topic,
       topicQuestion: _topicQuestion,
-      chunkOutput: `;END:${_questionId}`,
+      chunkOutput: `<br/>;END:${_questionId}`,
     });
   }
 };
@@ -142,7 +143,7 @@ const init = async () => {
       const questionId = uuidv4();
 
       const lastId = await redisUtils.getLastIdOfStream(OPENAI_STREAM); //to prevent re scan prev question or use consumer groups
-      console.log("lastId", lastId);
+      LoggerCls.info("lastId", lastId);
       askQuestion(model, questionId, topic, topicQuestion); //async
 
       // Listen for new messages on the Redis stream
@@ -154,13 +155,14 @@ const init = async () => {
         startChunk,
         endChunk,
         (data) => {
+          LoggerCls.info(data.chunkOutput);
           socket.emit("chunk", data.chunkOutput);
         }
       );
     });
 
     socket.on("disconnect", () => {
-      console.log("user disconnected");
+      LoggerCls.info("user disconnected");
     });
   });
 
@@ -181,7 +183,7 @@ const init = async () => {
   });
 
   httpServer.listen(3000, () => {
-    console.log("listening on *:3000");
+    LoggerCls.info("listening on *:3000");
   });
 };
 
@@ -190,6 +192,9 @@ init();
 /*
  TODO: 
 
+  - clean up , formatting frontend and back end
+ - there is a bug : search same question multiple times (May be socket issue)
  - use consumer groups for reading stream for perf issue
- - clear redis stream data after read
+ - add loader in UI
+ 
 */

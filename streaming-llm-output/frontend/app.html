@@ -4,84 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ask Me About Redis</title>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <link
       href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
       rel="stylesheet"
     />
-
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 
-    <script>
-      const socket = io("http://localhost:3000");
-
-      let startTime = null;
-      function search() {
-        const question = document.getElementById("question").value;
-        const withoutStream = document.getElementById("withoutStream").checked;
-        const outputDiv = document.getElementById("output");
-
-        startTime = new Date();
-
-        // Clear previous output
-        outputDiv.innerHTML = "";
-        document.getElementById("duration").innerText = "";
-
-        if (withoutStream) {
-          // Call the /askQuestionWithoutStream API
-          fetch("http://localhost:3000/askQuestionWithoutStream", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              topic: "Redis",
-              topicQuestion: question,
-            }),
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              const endTime = new Date();
-
-              // Append API response to the DOM
-              outputDiv.innerHTML = data.output;
-
-              const duration = (endTime - startTime) / 1000;
-              document.getElementById("duration").innerText = duration;
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-            });
-        } else {
-          // Use socket to emit the question
-          socket.emit("askQuestion", {
-            topic: "Redis",
-            topicQuestion: question,
-          });
-        }
-      }
-
-      socket.on("chunk", (chunk) => {
-        const outputDiv = document.getElementById("output");
-        console.log("Received chunk:", chunk);
-        // Append chunk to the DOM
-        outputDiv.innerHTML += chunk; //+ "<br/>";
-
-        if (chunk.trim() == "START") {
-          const endTime = new Date();
-
-          const duration = (endTime - startTime) / 1000;
-          document.getElementById("duration").innerText = duration;
-        }
-      });
-    </script>
+    <script src="./app.js"></script>
   </head>
-  <body class="bg-gray-100 flex justify-center min-h-screen p-4">
+  <body
+    class="bg-gray-100 flex justify-center min-h-screen p-4"
+    onload="onPageLoad()"
+  >
     <div
       class="flex-grow bg-white p-8 rounded-lg shadow-md max-w-3xl flex flex-col"
     >
@@ -97,7 +37,7 @@
           placeholder="Type your question here..."
         ></textarea>
         <button
-          onclick="search()"
+          onclick="onSearch()"
           style="background-color: #ff4438; border-color: #ff4438"
           class="text-white font-bold p-4 rounded-r-lg border"
         >
