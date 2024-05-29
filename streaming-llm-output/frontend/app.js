@@ -3,6 +3,16 @@ const socket = io("http://localhost:3000");
 let startTime = null;
 const topic = "Redis";
 
+function showLoader(isShow) {
+    const loaderDiv = document.getElementById("loader");
+    if (isShow) {
+        loaderDiv.style.display = "flex";
+    }
+    else {
+        loaderDiv.style.display = "none";
+    }
+}
+
 function setDurationLabel() {
     const durationDiv = document.getElementById("duration");
     const endTime = new Date();
@@ -11,6 +21,8 @@ function setDurationLabel() {
 }
 
 function askQuestionWithoutStream(_question) {
+    showLoader(true);
+
     fetch("http://localhost:3000/askQuestionWithoutStream", {
         method: "POST",
         headers: {
@@ -28,8 +40,10 @@ function askQuestionWithoutStream(_question) {
             outputDiv.innerHTML = data.output;
 
             setDurationLabel();
+            showLoader(false);
         })
         .catch((error) => {
+            showLoader(false);
             console.error("Error:", error);
         });
 }
@@ -40,6 +54,7 @@ function onChunkReceived(chunk) {
 
     if (chunk.match("START:")) {
         setDurationLabel();
+        showLoader(false);
     }
 }
 
@@ -60,6 +75,7 @@ function onSearch() {
         askQuestionWithoutStream(question);
 
     } else {
+        showLoader(true);
         // Use socket to emit the question
         socket.emit("askQuestion", {
             topic: topic,
@@ -69,6 +85,8 @@ function onSearch() {
 }
 
 function onPageLoad() {
+    showLoader(false);
+
     socket.on("chunk", (chunk) => {
         console.log("chunk:", chunk);
         onChunkReceived(chunk);
