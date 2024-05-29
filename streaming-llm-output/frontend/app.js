@@ -10,7 +10,7 @@ function setDurationLabel() {
     durationDiv.innerText = duration;
 }
 
-function askQuestionWithoutStream() {
+function askQuestionWithoutStream(_question) {
     fetch("http://localhost:3000/askQuestionWithoutStream", {
         method: "POST",
         headers: {
@@ -18,11 +18,12 @@ function askQuestionWithoutStream() {
         },
         body: JSON.stringify({
             topic: topic,
-            topicQuestion: question,
+            topicQuestion: _question,
         }),
     })
         .then((response) => response.json())
         .then((data) => {
+            const outputDiv = document.getElementById("output");
             // Append API response to the DOM
             outputDiv.innerHTML = data.output;
 
@@ -56,7 +57,7 @@ function onSearch() {
 
     if (isWithoutStream) {
         // Call the /askQuestionWithoutStream API
-        askQuestionWithoutStream();
+        askQuestionWithoutStream(question);
 
     } else {
         // Use socket to emit the question

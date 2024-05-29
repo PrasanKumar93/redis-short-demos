@@ -186,12 +186,14 @@ const init = async () => {
       );
       res.json({ output });
     } catch (error) {
+      console.log(error);
       res.status(500).json({ error: error });
     }
   });
 
   httpServer.listen(3000, () => {
-    LoggerCls.info("listening on *:3000");
+    LoggerCls.info("Backend: listening on *:3000");
+    LoggerCls.info("Frontend URL: http://127.0.0.1:5400/");
   });
 };
 
@@ -203,5 +205,6 @@ init();
   - clean up , formatting frontend (serve from cli on npm start) and back end
  - use consumer groups for reading stream for perf issue
  - add loader in UI
- 
+ - tutorial with gif image
+ - then live video questioning (ask cody)
 */
