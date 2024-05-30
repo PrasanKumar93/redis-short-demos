@@ -61,8 +61,3 @@ httpServer.listen(3000, async () => {
   LoggerCls.info("Frontend URL is http://127.0.0.1:5400/");
 });
 //---- express server
-
-/*
- TODO: 
- - use consumer groups for reading stream 
-*/

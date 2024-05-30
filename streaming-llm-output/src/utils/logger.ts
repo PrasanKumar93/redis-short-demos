@@ -16,7 +16,7 @@ class LoggerCls {
   static debug(_message: string, _details?: unknown): void {
     if (_message) {
       // console.debug(_message);
-      LoggerCls.logDetails(_details);
+      // LoggerCls.logDetails(_details);
     }
   }
 
