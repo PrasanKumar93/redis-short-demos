@@ -261,7 +261,11 @@ const listenToStreamsByReadGroup = async (
                   await messageHandler(messageItem.message, messageItem.id);
                 }
                 //(E) acknowledge individual messages after processing
-                nodeRedisClient.xAck(streamKeyName, groupName, messageItem.id);
+                await nodeRedisClient.xAck(
+                  streamKeyName,
+                  groupName,
+                  messageItem.id
+                );
               }
             }
           }

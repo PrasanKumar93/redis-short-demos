@@ -7,11 +7,13 @@ import { ChatOpenAI } from "@langchain/openai";
 
 import * as redisUtils from "./utils/redis-wrapper.js";
 import { LoggerCls } from "./utils/logger.js";
-import { OPENAI_STREAM, askQuestion } from "./question.js";
+import { askQuestion } from "./question.js";
+import { CONFIG } from "./config.js";
 
 const listenStream = (
   socket: any,
   activeListeners: Map<string, boolean>,
+  userId: string,
   messageCallback: IMessageHandler
 ) => {
   // listen to redis stream for new messages and pass it to messageCallback
@@ -19,12 +21,12 @@ const listenStream = (
     {
       streams: [
         {
-          streamKeyName: OPENAI_STREAM,
+          streamKeyName: `${CONFIG.OPENAI_STREAM}:${userId}`,
           messageCallback: messageCallback,
         },
       ],
-      groupName: OPENAI_STREAM + "_Grp",
-      consumerName: OPENAI_STREAM + "_Con",
+      groupName: `${CONFIG.OPENAI_STREAM}_Grp_${userId}`,
+      consumerName: `${CONFIG.OPENAI_STREAM}_Con_${userId}`,
       maxNoOfEntriesToReadAtTime: 1,
     },
     socket.id,
@@ -39,14 +41,17 @@ const initSocket = async (socketServer: Server, model: ChatOpenAI) => {
     LoggerCls.info("a user connected");
     activeListeners.set(socket.id, true);
 
-    listenStream(socket, activeListeners, (message, messageId) => {
+    const loginUserId = "USER1"; //example user id
+    listenStream(socket, activeListeners, loginUserId, (message, messageId) => {
       LoggerCls.info("-: " + message.chunkOutput);
       socket.emit("chunk", message.chunkOutput); // Emit chunk to client (browser)
     });
 
     socket.on("askQuestion", async ({ topic, topicQuestion }) => {
+      activeListeners.set(socket.id, true);
       const questionId = "Q-" + uuidv4();
-      askQuestion(model, questionId, topic, topicQuestion); //trigger async
+      const streamName = `${CONFIG.OPENAI_STREAM}:${loginUserId}`;
+      askQuestion(model, questionId, topic, topicQuestion, streamName); //trigger async
     });
 
     socket.on("disconnect", () => {
@@ -57,8 +62,3 @@ const initSocket = async (socketServer: Server, model: ChatOpenAI) => {
 };
 
 export { initSocket };
-
-/*
- Note:
- -  Have specific stream per user
-*/

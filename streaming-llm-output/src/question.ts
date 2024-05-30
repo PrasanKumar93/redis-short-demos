@@ -10,8 +10,6 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import * as redisUtils from "./utils/redis-wrapper.js";
 import { LoggerCls } from "./utils/logger.js";
 
-const OPENAI_STREAM = "OPENAI_STREAM";
-
 const getQuestionChain = async function (
   _model: ChatOpenAI,
   _questionId: string,
@@ -41,7 +39,8 @@ const askQuestion = async function (
   _model: ChatOpenAI,
   _questionId: string,
   _topic: string,
-  _topicQuestion: string
+  _topicQuestion: string,
+  _streamName: string
 ) {
   if (_model && _topic && _topicQuestion) {
     const startChunkLbl = `START:${_questionId};<br/>`;
@@ -61,7 +60,7 @@ const askQuestion = async function (
 
     // add start chunk to stream
     const questionStartMessageId = await redisUtils.addItemToStream(
-      OPENAI_STREAM,
+      _streamName,
       {
         questionId: _questionId,
         chunkOutput: startChunkLbl,
@@ -72,27 +71,24 @@ const askQuestion = async function (
     for await (const chunk of streamHandle) {
       LoggerCls.debug(chunk);
 
-      await redisUtils.addItemToStream(OPENAI_STREAM, {
+      await redisUtils.addItemToStream(_streamName, {
         questionId: _questionId,
         chunkOutput: chunk.toString(), //runtime  casting
       });
     }
 
     // add end chunk to stream
-    const questionEndMessageId = await redisUtils.addItemToStream(
-      OPENAI_STREAM,
-      {
-        questionId: _questionId,
-        chunkOutput: endChunkLbl,
-      }
-    );
+    const questionEndMessageId = await redisUtils.addItemToStream(_streamName, {
+      questionId: _questionId,
+      chunkOutput: endChunkLbl,
+    });
 
     // add question details/ meta data to redis (for future re-read of stream)
     const questionDetails = {
       topic: _topic,
       topicQuestion: _topicQuestion,
       questionId: _questionId,
-      streamName: OPENAI_STREAM,
+      streamName: _streamName,
       streamStartMessageId: questionStartMessageId,
       streamEndMessageId: questionEndMessageId,
     };
@@ -124,9 +120,4 @@ const askQuestionWithoutStream = async function (
   return output;
 };
 
-export {
-  OPENAI_STREAM,
-  askQuestion,
-  askQuestionWithoutStream,
-  getQuestionChain,
-};
+export { askQuestion, askQuestionWithoutStream, getQuestionChain };

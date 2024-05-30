@@ -6,7 +6,8 @@ import { ChatOpenAI } from "@langchain/openai";
 
 import * as redisUtils from "./utils/redis-wrapper.js";
 import { LoggerCls } from "./utils/logger.js";
-import { OPENAI_STREAM, askQuestion } from "./question.js";
+import { askQuestion } from "./question.js";
+import { CONFIG } from "./config.js";
 
 const initSocket = async (socketServer: Server, model: ChatOpenAI) => {
   const activeListeners = new Map<string, boolean>();
@@ -21,16 +22,22 @@ const initSocket = async (socketServer: Server, model: ChatOpenAI) => {
       const questionId = uuidv4();
 
       //lastId to prevent re scan of prev question (or use consumer groups)
-      const lastId = await redisUtils.getLastIdOfStream(OPENAI_STREAM);
+      const lastId = await redisUtils.getLastIdOfStream(CONFIG.OPENAI_STREAM);
       LoggerCls.debug("lastId", lastId);
       //trigger the question async
-      askQuestion(model, questionId, topic, topicQuestion);
+      askQuestion(
+        model,
+        questionId,
+        topic,
+        topicQuestion,
+        CONFIG.OPENAI_STREAM
+      );
 
       // Listen for new messages on the Redis stream
       const startChunk = `START:${questionId};`;
       const endChunk = `;END:${questionId}`;
       redisUtils.readStream(
-        OPENAI_STREAM,
+        CONFIG.OPENAI_STREAM,
         lastId,
         startChunk,
         endChunk,
@@ -53,8 +60,3 @@ const initSocket = async (socketServer: Server, model: ChatOpenAI) => {
 };
 
 export { initSocket };
-
-/*
- TODO: 
- - Have per user stream and use consumer groups for reading stream 
-*/

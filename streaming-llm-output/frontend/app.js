@@ -54,6 +54,9 @@ function onChunkReceived(chunk) {
 
     if (chunk.match("START:")) {
         setDurationLabel();
+        // showLoader(false);
+    }
+    if (chunk.match("START:") || chunk.match("END:")) {
         showLoader(false);
     }
 }
