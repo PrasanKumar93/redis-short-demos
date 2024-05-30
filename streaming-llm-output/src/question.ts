@@ -44,6 +44,9 @@ const askQuestion = async function (
   _topicQuestion: string
 ) {
   if (_model && _topic && _topicQuestion) {
+    const startChunkLbl = `START:${_questionId};<br/>`;
+    const endChunkLbl = `<br/>;END:${_questionId}`;
+
     const chain = await getQuestionChain(
       _model,
       _questionId,
@@ -56,29 +59,44 @@ const askQuestion = async function (
       topic: _topic,
     });
 
-    await redisUtils.addItemToStream(OPENAI_STREAM, {
-      questionId: _questionId,
-      topic: _topic,
-      topicQuestion: _topicQuestion,
-      chunkOutput: `START:${_questionId};<br/>`,
-    });
+    // add start chunk to stream
+    const questionStartMessageId = await redisUtils.addItemToStream(
+      OPENAI_STREAM,
+      {
+        questionId: _questionId,
+        chunkOutput: startChunkLbl,
+      }
+    );
 
+    // add LLM output chunks to stream
     for await (const chunk of streamHandle) {
       LoggerCls.debug(chunk);
 
       await redisUtils.addItemToStream(OPENAI_STREAM, {
         questionId: _questionId,
-        topic: _topic,
-        topicQuestion: _topicQuestion,
-        chunkOutput: chunk.toString(), //runtime string casting
+        chunkOutput: chunk.toString(), //runtime  casting
       });
     }
-    await redisUtils.addItemToStream(OPENAI_STREAM, {
-      questionId: _questionId,
+
+    // add end chunk to stream
+    const questionEndMessageId = await redisUtils.addItemToStream(
+      OPENAI_STREAM,
+      {
+        questionId: _questionId,
+        chunkOutput: endChunkLbl,
+      }
+    );
+
+    // add question details/ meta data to redis (for future re-read of stream)
+    const questionDetails = {
       topic: _topic,
       topicQuestion: _topicQuestion,
-      chunkOutput: `<br/>;END:${_questionId}`,
-    });
+      questionId: _questionId,
+      streamName: OPENAI_STREAM,
+      streamStartMessageId: questionStartMessageId,
+      streamEndMessageId: questionEndMessageId,
+    };
+    await redisUtils.setJsonItem(`questions:${_questionId}`, questionDetails);
   }
 };
 
@@ -97,6 +115,7 @@ const askQuestionWithoutStream = async function (
       _topicQuestion
     );
 
+    // Invoke the chain and get full output
     output = await chain.invoke({
       topic: _topic,
     });

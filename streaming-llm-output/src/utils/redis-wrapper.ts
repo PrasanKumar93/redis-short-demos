@@ -60,20 +60,25 @@ async function get(_key: string) {
   return result;
 }
 
+async function setJsonItem(_key: string, _value: any) {
+  const result = await nodeRedisClient?.set(_key, JSON.stringify(_value));
+  return result;
+}
+
 async function addItemToStream(streamKey: string, item: any) {
   let insertedId = "";
   try {
     const client = getConnection();
     if (streamKey && item && client) {
       const id = "*"; //* = auto generate
-      // insertedId = await client.xAdd(streamKey, id, item);
+      insertedId = await client.xAdd(streamKey, id, item);
       //@ts-ignore
-      insertedId = await Promise.race([
-        client.xAdd(streamKey, id, item),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), 1000)
-        ),
-      ]);
+      // insertedId = await Promise.race([
+      //   client.xAdd(streamKey, id, item),
+      //   new Promise((_, reject) =>
+      //     setTimeout(() => reject(new Error("Timeout")), 1000)
+      //   ),
+      // ]);
       LoggerCls.debug("insertedId", insertedId);
     }
   } catch (err) {
@@ -112,7 +117,7 @@ async function readStream(
 ) {
   let reading = false;
 
-  //safe check for active listener if while loop didn't break for some reason (e.g. chunkOutput.endsWith didn't match endChunk)
+  //safe check for Active Client if while loop didn't break for some reason (e.g. chunkOutput.endsWith didn't match endChunk) but client disconnected
   const isActiveClient = activeListeners.get(clientId);
   //while(true)
   while (isActiveClient) {
@@ -159,7 +164,7 @@ const listenToStreamsByReadGroup = async (
      (A) create consumer group for the stream
      (B) read set of messages from the stream
      (C) process all messages received
-     (D) trigger appropriate action callback for each message
+     (D) trigger appropriate callback for each message
      (E) acknowledge individual messages after processing
     */
   if (nodeRedisClient) {
@@ -221,6 +226,7 @@ const listenToStreamsByReadGroup = async (
           }
         );
 
+        // sample dataArr
         // dataArr = [
         //   {
         //     name: 'streamName',
@@ -241,6 +247,7 @@ const listenToStreamsByReadGroup = async (
             for (let messageItem of data.messages) {
               const streamKeyName = data.name;
 
+              // to get the messageCallback for the stream name
               const stream = streams.find(
                 (s) => s.streamKeyName == streamKeyName
               );
@@ -276,6 +283,7 @@ export {
   getKeys,
   set,
   get,
+  setJsonItem,
   addItemToStream,
   readStream,
   getLastIdOfStream,

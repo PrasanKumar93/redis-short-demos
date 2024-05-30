@@ -7,7 +7,7 @@
     "build": "tsc",
     "frontend": "http-server frontend -p 5400 -c-1",
     "backend": "npm run build && node dist/index.js",
-    "start": "concurrently \"npm run frontend\" \"npm run backend\""
+    "start": "concurrently \"npm run backend\" \"npm run frontend\""
   },
   "type": "module",
   "keywords": [],

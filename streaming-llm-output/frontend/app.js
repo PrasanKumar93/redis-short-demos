@@ -91,5 +91,18 @@ function onPageLoad() {
         console.log("chunk:", chunk);
         onChunkReceived(chunk);
     });
+
+    socket.on('connect', () => {
+        //say reconnect
+        console.log('Connected to server');
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+    });
+
+    socket.on('error', (error) => {
+        console.log('Socket error:', error);
+    });
 }
 

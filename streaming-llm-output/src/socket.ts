@@ -14,10 +14,7 @@ const listenStream = (
   activeListeners: Map<string, boolean>,
   messageCallback: IMessageHandler
 ) => {
-  const clientId = socket.id;
-  activeListeners.set(clientId, true);
-
-  // listen redis stream for new messages
+  // listen to redis stream for new messages and pass it to messageCallback
   redisUtils.listenToStreamsByReadGroup(
     {
       streams: [
@@ -30,7 +27,7 @@ const listenStream = (
       consumerName: OPENAI_STREAM + "_Con",
       maxNoOfEntriesToReadAtTime: 1,
     },
-    clientId,
+    socket.id,
     activeListeners
   );
 };
@@ -40,13 +37,15 @@ const initSocket = async (socketServer: Server, model: ChatOpenAI) => {
 
   socketServer.on("connection", (socket) => {
     LoggerCls.info("a user connected");
+    activeListeners.set(socket.id, true);
+
     listenStream(socket, activeListeners, (message, messageId) => {
       LoggerCls.info("-: " + message.chunkOutput);
-      socket.emit("chunk", message.chunkOutput); // Emit chunk to client
+      socket.emit("chunk", message.chunkOutput); // Emit chunk to client (browser)
     });
 
     socket.on("askQuestion", async ({ topic, topicQuestion }) => {
-      const questionId = uuidv4();
+      const questionId = "Q-" + uuidv4();
       askQuestion(model, questionId, topic, topicQuestion); //trigger async
     });
 
@@ -60,6 +59,6 @@ const initSocket = async (socketServer: Server, model: ChatOpenAI) => {
 export { initSocket };
 
 /*
- TODO: 
- - Have per user stream 
+ Note:
+ -  Have specific stream per user
 */
