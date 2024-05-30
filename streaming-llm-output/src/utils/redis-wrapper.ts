@@ -155,6 +155,32 @@ async function readStream(
   }
 }
 
+const createStreamConsumerGroup = async (
+  streamKeyName: string,
+  groupName: string
+) => {
+  const idInitialPosition = "0"; //0 = start, $ = end or any specific id
+
+  try {
+    await nodeRedisClient?.xGroupCreate(
+      streamKeyName,
+      groupName,
+      idInitialPosition,
+      {
+        MKSTREAM: true,
+      }
+    );
+
+    LoggerCls.info(
+      `Created consumer group ${groupName} in stream ${streamKeyName}`
+    );
+  } catch (err) {
+    LoggerCls.error(
+      `Consumer group ${groupName} already exists in stream ${streamKeyName}!`
+    ); //, err
+  }
+};
+
 const listenToStreamsByReadGroup = async (
   options: ListenStreamOptions,
   clientId: string,
@@ -172,33 +198,14 @@ const listenToStreamsByReadGroup = async (
     const groupName = options.groupName;
     const consumerName = options.consumerName;
     const readMaxCount = options.maxNoOfEntriesToReadAtTime || 100;
-    const idInitialPosition = "0"; //0 = start, $ = end or any specific id
     const streamKeyIdArr: {
       key: string;
       id: string;
     }[] = [];
 
     streams.map(async (stream) => {
-      try {
-        // (A) create consumer group for the stream
-
-        await nodeRedisClient?.xGroupCreate(
-          stream.streamKeyName,
-          groupName,
-          idInitialPosition,
-          {
-            MKSTREAM: true,
-          }
-        );
-
-        LoggerCls.info(
-          `Created consumer group ${groupName} in stream ${stream.streamKeyName}`
-        );
-      } catch (err) {
-        LoggerCls.error(
-          `Consumer group ${groupName} already exists in stream ${stream.streamKeyName}!`
-        ); //, err
-      }
+      // (A) create consumer group for the stream
+      await createStreamConsumerGroup(stream.streamKeyName, groupName);
 
       streamKeyIdArr.push({
         key: stream.streamKeyName,
