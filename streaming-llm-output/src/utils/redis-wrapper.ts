@@ -184,7 +184,9 @@ const createStreamConsumerGroup = async (
 const listenToStreamsByReadGroup = async (
   options: ListenStreamOptions,
   clientId: string,
-  activeListeners: Map<string, boolean>
+  activeListeners: Map<string, boolean>,
+  startChunk: string,
+  endChunk: string
 ) => {
   /*
      (A) create consumer group for the stream
@@ -193,6 +195,8 @@ const listenToStreamsByReadGroup = async (
      (D) trigger appropriate callback for each message
      (E) acknowledge individual messages after processing
     */
+  let reading = false;
+
   if (nodeRedisClient) {
     const streams = options.streams;
     const groupName = options.groupName;
@@ -260,13 +264,23 @@ const listenToStreamsByReadGroup = async (
               );
 
               if (stream && messageItem.message) {
+                if (messageItem.message?.chunkOutput.startsWith(startChunk)) {
+                  reading = true;
+                }
+
                 const messageHandler = stream.messageCallback;
 
-                if (messageHandler) {
+                if (messageHandler && reading) {
                   // (D) trigger appropriate action callback for each message
 
                   await messageHandler(messageItem.message, messageItem.id);
                 }
+
+                if (messageItem.message?.chunkOutput.endsWith(endChunk)) {
+                  console.log("End of chunk found");
+                  return;
+                }
+
                 //(E) acknowledge individual messages after processing
                 await nodeRedisClient.xAck(
                   streamKeyName,

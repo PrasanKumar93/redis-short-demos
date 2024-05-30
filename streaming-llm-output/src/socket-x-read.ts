@@ -9,7 +9,7 @@ import { LoggerCls } from "./utils/logger.js";
 import { askQuestion } from "./question.js";
 import { CONFIG } from "./config.js";
 
-const initSocket = async (socketServer: Server, model: ChatOpenAI) => {
+const initSocketXRead = async (socketServer: Server, model: ChatOpenAI) => {
   const activeListeners = new Map<string, boolean>();
 
   socketServer.on("connection", (socket) => {
@@ -56,4 +56,4 @@ const initSocket = async (socketServer: Server, model: ChatOpenAI) => {
   });
 };
 
-export { initSocket };
+export { initSocketXRead };
